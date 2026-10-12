@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CleanLines — Text Cleaner</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f6fb;
+      color: #202938;
+    }
+
+    header {
+      text-align: center;
+      padding: 35px 16px 20px;
+    }
+
+    header h1 {
+      color: #2563eb;
+      margin: 0 0 8px;
+      font-size: 36px;
+    }
+
+    header p {
+      color: #64748b;
+      margin: 0;
+    }
+
+    main {
+      width: min(1000px, 92%);
+      margin: 20px auto 50px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+
+    section {
+      background: white;
+      padding: 22px;
+      border-radius: 14px;
+      box-shadow: 0 5px 20px #1e293b0c;
+    }
+
+    label.title {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 260px;
+      padding: 12px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      resize: vertical;
+      font: inherit;
+      line-height: 1.5;
+    }
+
+    textarea:focus {
+      outline: 2px solid #93c5fd;
+      border-color: #2563eb;
+    }
+
+    .options {
+      display: grid;
+      gap: 12px;
+      margin: 16px 0;
+      font-size: 14px;
+    }
+
+    input[type="checkbox"] {
+      accent-color: #2563eb;
+      margin-right: 8px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 12px 15px;
+      margin: 8px 5px 0 0;
+      background: #2563eb;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #1d4ed8;
+    }
+
+    .secondary {
+      background: #e8eefc;
+      color: #1d4ed8;
+    }
+
+    .secondary:hover {
+      background: #dbe6ff;
+    }
+
+    #stats {
+      color: #64748b;
+      font-size: 14px;
+      margin: 15px 0 4px;
+    }
+
+    footer {
+      text-align: center;
+      color: #94a3b8;
+      font-size: 12px;
+      padding: 10px;
+    }
+
+    @media (max-width: 700px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        padding-top: 25px;
+      }
+
+      section {
+        padding: 17px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>CleanLines</h1>
+    <p>Clean up your text in seconds.</p>
+  </header>
+
+  <main>
+    <section>
+      <label class="title" for="inputText">Original text</label>
+
+      <textarea
+        id="inputText"
+        placeholder="Paste your text here..."
+      ></textarea>
+
+      <div class="options">
+        <label>
+          <input type="checkbox" id="ignoreCase">
+          Ignore capitalisation
+        </label>
+
+        <label>
+          <input type="checkbox" id="removeBlank">
+          Remove blank lines
+        </label>
+
+        <label>
+          <input type="checkbox" id="trimSpaces">
+          Trim spaces around lines
+        </label>
+      </div>
+
+      <button id="cleanButton">Remove duplicates</button>
+      <button class="secondary" id="clearButton">Clear text</button>
+    </section>
+
+    <section>
+      <label class="title" for="outputText">Cleaned text</label>
+
+      <textarea
+        id="outputText"
+        readonly
+        placeholder="Your cleaned text will appear here..."
+      ></textarea>
+
+      <p id="stats">Lines removed: 0 · Lines remaining: 0</p>
+
+      <button id="copyButton">Copy result</button>
+      <button class="secondary" id="downloadButton">
+        Download .txt
+      </button>
+    </section>
+  </main>
+
+  <footer>
+    Your text stays in your browser. No account or upload required.
+  </footer>
+
+  <script>
+    const input = document.getElementById("inputText");
+    const output = document.getElementById("outputText");
+    const stats = document.getElementById("stats");
+
+    // Remove duplicate lines.
+    document.getElementById("cleanButton").addEventListener("click", function () {
+      const originalLines = input.value.split(/\r?\n/);
+      const seen = new Set();
+      const cleanedLines = [];
+      let removed = 0;
+
+      for (let line of originalLines) {
+        // Optionally remove spaces at the start and end.
+        if (document.getElementById("trimSpaces").checked) {
+          line = line.trim();
+        }
+
+        // Optionally remove empty lines.
+        if (
+          document.getElementById("removeBlank").checked &&
+          line.trim() === ""
+        ) {
+          removed++;
+          continue;
+        }
+
+        // Optionally treat uppercase and lowercase as equal.
+        const key = document.getElementById("ignoreCase").checked
+          ? line.toLowerCase()
+          : line;
+
+        if (seen.has(key)) {
+          removed++;
+        } else {
+          seen.add(key);
+          cleanedLines.push(line);
+        }
+      }
+
+      output.value = cleanedLines.join("\n");
+
+      stats.textContent =
+        "Lines removed: " + removed +
+        " · Lines remaining: " + cleanedLines.length;
+    });
+
+    // Clear both text boxes.
+    document.getElementById("clearButton").addEventListener("click", function () {
+      input.value = "";
+      output.value = "";
+      stats.textContent = "Lines removed: 0 · Lines remaining: 0";
+    });
+
+    // Copy the cleaned text.
+    document.getElementById("copyButton").addEventListener("click", async function () {
+      if (!output.value) {
+        stats.textContent = "Nothing to copy yet. Clean some text first.";
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(output.value);
+        stats.textContent = "Copied to clipboard!";
+      } catch {
+        output.select();
+        const copied = document.execCommand("copy");
+
+        stats.textContent = copied
+          ? "Copied to clipboard!"
+          : "Select the result and press Ctrl+C to copy.";
+      }
+    });
+
+    // Download the cleaned text as a .txt file.
+    document.getElementById("downloadButton").addEventListener("click", function () {
+      const file = new Blob(
+        [output.value],
+        { type: "text/plain;charset=utf-8" }
+      );
+
+      const url = URL.createObjectURL(file);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = "cleanlines.txt";
+      link.click();
+
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
+
